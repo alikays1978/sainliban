@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sain Liban -- Buffet Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a16;--olive:#5c6b1e;--olive-mid:#7a8f28;--olive-light:#c8d48a;
+  --olive-pale:#edf0d8;--olive-wash:#f6f8ee;--cream:#faf8f2;
+  --warm-gray:#6b6860;--border:#dddccc;--white:#ffffff;--radius:8px;--gap:3px;
+}
+body{margin:0;padding:0;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden}
+
+/* LANG */
+.lang-bar{background:var(--ink);padding:.4rem 1.25rem;display:flex;justify-content:flex-end;gap:.35rem}
+.lang-btn{background:none;border:1px solid rgba(200,212,138,.35);border-radius:4px;color:var(--olive-light);font-size:.7rem;font-weight:500;padding:.2rem .6rem;cursor:pointer;font-family:'Inter',sans-serif;opacity:.5;transition:all .15s}
+.lang-btn.active{opacity:1;background:var(--olive);border-color:var(--olive)}
+
+/* HEADER */
+.site-header{background:var(--ink);padding:1.1rem 1.5rem .9rem;text-align:center}
+.site-header-inner,.station-banner-inner{max-width:1280px;margin:0 auto;width:100%}
+.logo-img{width:155px;height:auto;display:block;margin:0 auto}
+
+/* STATION BANNER */
+.station-banner{background:var(--ink);border-top:1px solid rgba(200,212,138,.12);padding:.85rem 1.25rem}
+.station-banner > *,.station-banner-wrap{max-width:1280px;margin:0 auto}
+.page-wrap{max-width:1280px;margin:0 auto;width:100%}
+.site-header,.station-banner,.lang-bar{max-width:100%}
+.site-header-content,.station-banner-content{max-width:1280px;margin:0 auto}
+.station-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--olive-light);letter-spacing:.04em;margin-bottom:.2rem}
+.station-desc{font-size:.72rem;color:var(--olive-light);opacity:.6;line-height:1.45;margin-bottom:.4rem}
+.station-pills{display:flex;flex-wrap:wrap;gap:.3rem}
+.pill{font-size:.62rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;border:1px solid rgba(200,212,138,.28);color:var(--olive-light);padding:.13rem .48rem;border-radius:99px;opacity:.72}
+
+/* MAIN LAYOUT — two columns */
+.main{display:flex;flex-direction:row;align-items:flex-start;min-height:100vh;width:100%}
+
+/* LEFT: menu — scrollable content */
+.menu-col{flex:1;min-width:0;padding:1rem 1.25rem 3rem;overflow-y:auto}
+
+/* RIGHT: summary panel — sticky sidebar */
+.summary-col{width:290px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:.75rem .75rem .75rem 0;box-sizing:border-box}
+.summary-box{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.07);display:flex;flex-direction:column;max-height:calc(100vh - 1.5rem)}
+.summary-head{background:var(--ink);padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:center}
+.summary-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--olive-light);letter-spacing:.05em}
+.summary-gtag{font-size:.62rem;color:var(--olive-light);opacity:.5}
+.summary-body{padding:.7rem 1rem;min-height:60px;flex:1;overflow-y:auto}
+.s-empty{font-size:.78rem;color:var(--warm-gray);font-style:italic;text-align:center;padding:1.25rem 0;line-height:1.5}
+.s-head{font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--olive);margin:.6rem 0 .22rem;padding-bottom:.16rem;border-bottom:1px solid var(--olive-pale)}
+.s-line{display:flex;justify-content:space-between;align-items:flex-start;gap:.35rem;margin-bottom:.25rem;font-size:.77rem}
+.s-name{color:var(--ink);flex:1;line-height:1.3}
+.s-price{color:var(--olive);font-weight:500;white-space:nowrap}
+.s-rm{color:var(--warm-gray);cursor:pointer;font-size:.75rem;margin-left:.25rem;opacity:.4;transition:opacity .1s}
+.s-rm:hover{opacity:1;color:#c0392b}
+.s-inc{display:flex;justify-content:space-between;font-size:.77rem;margin-bottom:.25rem}
+.s-inc .s-name{color:var(--olive);font-style:italic}
+.s-inc .s-price{font-size:.7rem;color:var(--olive-mid)}
+
+.summary-foot{padding:.7rem 1rem;border-top:1px solid var(--border);background:var(--cream)}
+.total-row{display:flex;justify-content:space-between;align-items:baseline}
+.total-lbl{font-size:.76rem;color:var(--warm-gray)}
+.total-num{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:var(--olive)}
+.total-note{font-size:.66rem;color:var(--warm-gray);font-style:italic;margin-top:.1rem;display:none;line-height:1.4}
+.form-lbl{font-size:.76rem;font-weight:500;color:var(--ink);margin:.8rem 0 .4rem}
+.est-form{display:flex;flex-direction:column;gap:.4rem}
+.est-form input,.est-form textarea{width:100%;border:1px solid var(--border);border-radius:5px;padding:.45rem .65rem;font-size:.78rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--ink);transition:border-color .15s}
+.est-form input:focus,.est-form textarea:focus{outline:none;border-color:var(--olive)}
+.est-form textarea{height:56px;resize:vertical}
+.est-btn{background:var(--olive);color:var(--white);border:none;border-radius:5px;padding:.62rem 1rem;font-size:.8rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;width:100%;transition:background .15s;margin-top:.05rem}
+.est-btn:hover{background:var(--olive-mid)}
+.est-note{font-size:.66rem;color:var(--warm-gray);text-align:center;line-height:1.45;margin-top:.25rem}
+.success-msg{background:var(--olive-pale);border:1px solid var(--olive-light);border-radius:5px;padding:.65rem .9rem;font-size:.78rem;color:var(--olive);display:none;text-align:center;line-height:1.5;margin-top:.35rem}
+
+/* SECTIONS */
+.section{margin-bottom:1rem}
+.section-label{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.04em;padding-bottom:.3rem;border-bottom:2px solid var(--olive-light);margin-bottom:.28rem;display:flex;align-items:baseline;gap:.45rem}
+.section-opt{font-size:.68rem;font-weight:400;color:var(--warm-gray);font-family:'Inter',sans-serif}
+.section-note{font-size:.73rem;color:var(--warm-gray);margin-bottom:.8rem;font-style:italic}
+.cat-label{font-size:.61rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--olive);margin:.9rem 0 .35rem}
+.panel{display:none}.panel.active{display:block}
+
+/* FORMAT */
+.format-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.3rem}
+.format-card{border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;background:var(--white);overflow:hidden;transition:border-color .15s,background .15s}
+.format-card:hover{border-color:var(--olive-mid)}
+.format-card.active{border-color:var(--olive);background:var(--olive-wash)}
+.fc-img{width:100%;height:42px;background:var(--olive-pale);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--olive);letter-spacing:.1em}
+.fc-body{padding:.58rem .82rem}
+.fc-title{font-weight:500;font-size:.86rem;margin-bottom:.15rem}
+.fc-desc{font-size:.71rem;color:var(--warm-gray);line-height:1.38}
+.fc-tag{display:inline-block;font-size:.61rem;letter-spacing:.04em;text-transform:uppercase;background:var(--olive-pale);color:var(--olive);padding:.1rem .38rem;border-radius:99px;margin-top:.28rem;font-weight:500}
+
+/* ITEM CARDS */
+.item-card{display:grid;grid-template-columns:48px 1fr;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:3px;background:var(--white);overflow:hidden;transition:border-color .15s,background .15s}
+.item-card:hover{border-color:var(--olive-mid)}
+.item-card.selected{border-color:var(--olive);background:var(--olive-wash)}
+.ic{background:var(--olive-pale);display:flex;align-items:center;justify-content:center;font-size:.48rem;font-weight:700;letter-spacing:.04em;color:var(--olive);text-transform:uppercase;font-family:'Inter',sans-serif;flex-shrink:0;width:48px;height:48px}
+.ib{padding:.28rem .55rem}
+.i-name{font-weight:500;font-size:.79rem;color:var(--ink);line-height:1.2}
+.i-desc{font-size:.64rem;color:var(--warm-gray);line-height:1.2;margin-top:.02rem;margin-bottom:.16rem}
+.i-ctrl{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.qg{display:flex;align-items:center;gap:.2rem;background:var(--cream);border:1px solid var(--border);border-radius:5px;padding:.1rem .28rem}
+.ql{font-size:.65rem;color:var(--warm-gray);margin-right:.04rem;white-space:nowrap}
+.qb{width:19px;height:19px;border:none;border-radius:3px;background:transparent;cursor:pointer;font-size:.88rem;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:background .1s;line-height:1;flex-shrink:0}
+.qb:hover{background:var(--olive-pale);color:var(--olive)}
+.qv{min-width:17px;text-align:center;font-size:.78rem;font-weight:500;color:var(--ink)}
+.ptag{font-size:.71rem;font-weight:500;color:var(--olive);margin-left:auto;white-space:nowrap}
+
+/* TRAY */
+.tray-card{display:grid;grid-template-columns:48px 1fr;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:3px;background:var(--white);overflow:hidden;transition:border-color .15s,background .15s}
+.tray-card:hover{border-color:var(--olive-mid)}
+.tray-card.selected{border-color:var(--olive);background:var(--olive-wash)}
+.tb{padding:.28rem .55rem}
+.t-name{font-weight:500;font-size:.79rem;line-height:1.2}
+.t-desc{font-size:.64rem;color:var(--warm-gray);line-height:1.2;margin-top:.02rem;margin-bottom:.16rem}
+.t-btns{display:flex;gap:.28rem;flex-wrap:wrap}
+.t-btn{font-size:.68rem;border:1px solid var(--border);border-radius:5px;padding:.16rem .52rem;background:var(--white);color:var(--ink);cursor:pointer;transition:all .1s;white-space:nowrap}
+.t-btn:hover{background:var(--olive-pale);border-color:var(--olive-mid)}
+.t-btn.active{background:var(--olive-pale);border-color:var(--olive);color:var(--olive);font-weight:500}
+
+/* TOGGLE ROW */
+.trow{display:grid;grid-template-columns:48px 1fr auto auto;align-items:center;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:3px;background:var(--white);cursor:pointer;overflow:hidden;transition:border-color .15s,background .15s}
+.trow:hover,.trow.active{border-color:var(--olive);background:var(--olive-wash)}
+.trow-ic{background:var(--olive-pale);display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:700;letter-spacing:.05em;color:var(--olive);text-transform:uppercase;flex-shrink:0;width:48px;height:48px;overflow:hidden}
+.trow-info{padding:.28rem .55rem}
+.trow-name{font-weight:500;font-size:.79rem;line-height:1.2}
+.trow-desc{font-size:.64rem;color:var(--warm-gray);margin-top:.02rem}
+.trow-price{font-size:.8rem;font-weight:500;color:var(--olive);padding:.5rem .4rem;white-space:nowrap}
+.trow-chk{width:19px;height:19px;border:1.5px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;margin-right:.65rem;color:transparent;transition:all .15s;background:var(--white)}
+.trow.active .trow-chk{background:var(--olive);border-color:var(--olive);color:white}
+
+/* DESSERT = same as item */
+.dc{padding:.52rem .72rem}
+.d-name{font-weight:500;font-size:.84rem;line-height:1.3}
+.d-desc{font-size:.7rem;color:var(--warm-gray);margin-top:.1rem;margin-bottom:.32rem}
+.d-ctrl{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+
+/* TRANSPORT */
+.tr-row{display:flex;gap:.45rem;flex-wrap:wrap;margin:.4rem 0}
+.tr-opt{border:1px solid var(--border);border-radius:5px;padding:.3rem .72rem;font-size:.72rem;cursor:pointer;transition:all .15s;background:var(--white);color:var(--ink)}
+.tr-opt:hover{border-color:var(--olive-mid)}
+.tr-opt.active{background:var(--olive-pale);border-color:var(--olive);color:var(--olive);font-weight:500}
+.extra-row{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-top:.5rem}
+.el{font-size:.72rem;color:var(--warm-gray)}
+.ec{font-size:.74rem;font-weight:500;color:var(--olive)}
+
+/* GUEST */
+.g-row{display:flex;align-items:center;gap:.65rem;margin-bottom:.28rem}
+.g-lbl{font-size:.78rem;color:var(--warm-gray)}
+.g-input{width:65px;border:1px solid var(--border);border-radius:5px;padding:.33rem .48rem;font-size:.86rem;text-align:center;font-family:'Inter',sans-serif;background:var(--white)}
+.g-input:focus{outline:none;border-color:var(--olive)}
+.g-suggest{font-size:.7rem;color:var(--olive);font-style:italic;min-height:.95rem}
+
+@media(max-width:700px){
+  .main{flex-direction:column}
+  .summary-col{position:static;width:100%;max-height:none;overflow-y:visible;padding:1rem 1.25rem}
+  .summary-box{max-height:none;overflow-y:visible}
+  .menu-col{padding:1rem 1.25rem}
+}
+</style>
+</head>
+<body>
+
+<div class="lang-bar">
+  <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="btn-fr" onclick="setLang('fr')">FR</button>
+</div>
+
+<div class="site-header">
+  <img class="logo-img" src="images/logo.jpg" alt="Sain Liban">
+</div>
+
+<div class="station-banner">
+  <div class="station-title" data-en="Live Saj Station -- Included with every booking" data-fr="Station Saj en Direct -- Incluse avec chaque reservation">Live Saj Station -- Included with every booking</div>
+  <div class="station-desc" data-en="Every event includes a live saj station with 3 hours of on-site service, full setup and cleanup." data-fr="Chaque evenement inclut une station saj en direct avec 3 heures de service sur place, installation et nettoyage compris.">Every event includes a live saj station with 3 hours of on-site service, full setup and cleanup.</div>
+  <div class="station-pills">
+    <span class="pill" data-en="Live saj cooking" data-fr="Cuisson saj en direct">Live saj cooking</span>
+    <span class="pill" data-en="3 hrs service" data-fr="3h de service">3 hrs service</span>
+    <span class="pill" data-en="Setup and cleanup" data-fr="Installation et nettoyage">Setup and cleanup</span>
+    <span class="pill" data-en="Transport included Montreal" data-fr="Transport inclus Montreal">Transport included Montreal</span>
+  </div>
+</div>
+
+<div class="page-wrap">
+<div class="main">
+
+<!-- LEFT: MENU -->
+<div class="menu-col">
+
+  <div class="section">
+    <div class="section-label" data-en="Your event" data-fr="Votre evenement">Your event</div>
+    <div class="g-row">
+      <label class="g-lbl" for="gc" data-en="Number of guests" data-fr="Nombre d invites">Number of guests</label>
+      <input class="g-input" type="number" id="gc" min="1" value="20" oninput="upd()">
+    </div>
+    <div class="g-suggest" id="gs"></div>
+  </div>
+
+  <div class="section">
+      <div class="section-label" data-en="Saj manaish" data-fr="Saj regulier">Saj manaish</div>
+      <div style="margin:.5rem 0;border-radius:var(--radius);overflow:hidden;max-height:280px;"><img src="images/saj.jpg" alt="Saj manaish" style="width:100%;height:280px;object-fit:cover;display:block;"></div>
+      <div class="section-note" data-en="Per piece, 1/2 dozen, or full dozen." data-fr="Par piece, 1/2 douzaine ou douzaine complete.">Per piece, 1/2 dozen, or full dozen.</div>
+      <div class="cat-label" data-en="Vegetarian" data-fr="Vegetarien">Vegetarian</div><div id="reg-veg"></div>
+      <div class="cat-label" data-en="Chicken and Meat" data-fr="Poulet et Viande">Chicken and Meat</div><div id="reg-meat"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Salads / Salades <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div class="section-note" data-en="Medium tray (~1 kg, serves 10) — Big tray (~2 kg, serves 20)" data-fr="Plateau moyen (~1 kg, 10 personnes) — Grand plateau (~2 kg, 20 personnes)">Medium tray (~1 kg, serves 10) — Big tray (~2 kg, serves 20)</div>
+    <div id="salads-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Cold Mezze / Mezze Froid <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div class="section-note" data-en="Medium tray (~1 kg, serves 10) — Big tray (~2 kg, serves 20)" data-fr="Plateau moyen (~1 kg, 10 personnes) — Grand plateau (~2 kg, 20 personnes)">Medium tray (~1 kg, serves 10) — Big tray (~2 kg, serves 20)</div>
+    <div id="cold-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Hot Mezze / Mezze Chaud <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div class="section-note" data-en="Sold by the half-dozen or dozen. Half-dozen serves ~5, dozen serves ~10." data-fr="Vendu a la demi-douzaine ou douzaine. Demi-douzaine pour ~5 personnes, douzaine pour ~10.">Sold by the half-dozen or dozen. Half-dozen serves ~5, dozen serves ~10.</div>
+    <div id="hot-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label" data-en="Pickles, Garden and Bread" data-fr="Cornichons, Jardin et Pain">Pickles, Garden and Bread <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div id="pickles-list"></div>
+    <div style="margin-top:.55rem;font-size:.71rem;color:var(--olive);font-weight:500" data-en="Recommended for 20 guests: Pickles (medium) + garden (medium) + bread -- $140" data-fr="Recommande pour 20 invites: Cornichons (moyen) + jardin (moyen) + pain -- 140$">Recommended for 20 guests: Pickles (medium) + garden (medium) + bread -- $140</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label" data-en="Desserts" data-fr="Desserts">Desserts <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div id="desserts-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label" data-en="Drinks" data-fr="Boissons">Drinks <span class="section-opt" data-en="-- optional" data-fr="-- optionnel">-- optional</span></div>
+    <div class="section-note" data-en="Per litre or per 5 litres." data-fr="Par litre ou par 5 litres.">Per litre or per 5 litres.</div>
+    <div id="drinks-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label" data-en="Transport" data-fr="Transport">Transport</div>
+    <div class="section-note" data-en="Within Montreal is included. Outside Montreal adds $50." data-fr="Dans Montreal, inclus. Hors Montreal, supplement de 50$.">Within Montreal is included. Outside Montreal adds $50.</div>
+    <div class="tr-row">
+      <div class="tr-opt active" id="tr-mtl" onclick="setTr('montreal')" data-en="Within Montreal -- Included" data-fr="Dans Montreal -- Inclus">Within Montreal -- Included</div>
+      <div class="tr-opt" id="tr-out" onclick="setTr('outside')" data-en="Outside Montreal -- +$50" data-fr="Hors Montreal -- +50$">Outside Montreal -- +$50</div>
+    </div>
+    <div class="section-note" style="margin-top:.45rem" data-en="Extra hours of live service: $75 per hour." data-fr="Heures supplementaires: 75$ par heure.">Extra hours of live service: $75 per hour.</div>
+    <div class="extra-row">
+      <span class="el" data-en="Additional hours" data-fr="Heures additionnelles">Additional hours</span>
+      <div class="qg">
+        <button class="qb" data-action="extra" data-delta="-1">-</button>
+        <span class="qv" id="extra-val">0</span>
+        <button class="qb" data-action="extra" data-delta="1">+</button>
+      </div>
+      <span class="el">x $75/hr</span>
+      <span class="ec" id="extra-cost"></span>
+    </div>
+  </div>
+
+</div><!-- /menu-col -->
+
+<!-- RIGHT: SUMMARY ' sits at top, always visible -->
+<div class="summary-col">
+  <div class="summary-box">
+    <div class="summary-head">
+      <div class="summary-title" data-en="Your Estimate" data-fr="Votre Estimation">Your Estimate</div>
+      <div class="summary-gtag" id="hg">20 guests</div>
+    </div>
+    <div class="summary-body" id="sb">
+      <div class="s-empty" id="se" data-en="Select items above to build your estimate." data-fr="Selectionnez des articles pour creer votre estimation.">Select items above to build your estimate.</div>
+    </div>
+    <div class="summary-foot">
+      <div class="total-row">
+        <div class="total-lbl" data-en="Estimated total" data-fr="Total estimatif">Estimated total</div>
+        <div class="total-num" id="tot">$0</div>
+      </div>
+      <div class="total-note" id="tnote"></div>
+      <div class="form-lbl" data-en="Request your free estimate" data-fr="Demandez votre estimation gratuite">Request your free estimate</div>
+      <div class="est-form">
+        <input type="text" id="fn" data-placeholder-en="Your name" data-placeholder-fr="Votre nom" placeholder="Your name" autocomplete="name">
+        <input type="email" id="fe" data-placeholder-en="Email address" data-placeholder-fr="Adresse courriel" placeholder="Email address" autocomplete="email">
+        <input type="tel" id="fp" data-placeholder-en="Phone number" data-placeholder-fr="Numero de telephone" placeholder="Phone number" autocomplete="tel">
+        <input type="date" id="fd" min="2025-01-01">
+        <textarea id="fnotes" data-placeholder-en="Any questions or special requests..." data-placeholder-fr="Questions ou demandes speciales..." placeholder="Any questions or special requests..."></textarea>
+        <button class="est-btn" id="sbtn" onclick="send()" data-en="Send me this estimate ->" data-fr="Envoyer mon estimation ->">Send me this estimate -></button>
+        <div class="est-note" data-en="Free, no-commitment estimate. Once approved, Sain Liban will send a formal invoice with 50% deposit to confirm your date." data-fr="Estimation gratuite et sans engagement. Une fois approuvee, Sain Liban enverra une facture avec un acompte de 50%.">Free, no-commitment estimate. Once approved, Sain Liban will send a formal invoice with 50% deposit to confirm your date.</div>
+        <div class="success-msg" id="ok" data-en="Estimate sent! Ali will be in touch within 24 hours." data-fr="Estimation envoyee! Ali vous contactera dans les 24 heures.">Estimate sent! Ali will be in touch within 24 hours.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /page-wrap -->
+
+<script>
+var IMGS={
+  'd2':'images/item_d2.jpg',
+  'd6':'images/item_d6.jpg',
+  'd5':'images/item_d5.jpg',
+  'd3':'images/item_d3.jpg',
+  'd1':'images/item_d1.jpg',
+  'c_za':'images/item_c_za.jpg',
+  'c_pk':'images/item_c_pk.jpg',
+  'c_mo':'images/item_c_mo.jpg',
+  'c_lo':'images/item_c_lo.jpg',
+  'c_lk':'images/item_c_lk.jpg',
+  'm_z':'images/item_m_z.jpg',
+  'r_z':'images/item_m_z.jpg',
+  'm_c':'images/item_m_c.jpg',
+  'r_c':'images/item_m_c.jpg',
+  'm_m':'images/item_m_m.jpg',
+  'r_m':'images/item_m_m.jpg',
+  's_f':'images/item_s_f.jpg',
+  'c_lou':'images/item_c_lo.jpg',
+  'c_pot':'images/item_c_pk.jpg',
+  'c_len':'images/item_c_lk.jpg',
+  'c_mou':'images/item_c_mo.jpg',
+  'c_zat':'images/item_c_za.jpg',
+  'br':'images/item_br.jpg',
+  'c_bg':'images/item_c_bg.jpg',
+  'c_bm':'images/item_c_bm.jpg',
+  'h_c':'images/item_h_c.jpg',
+  'c_lb':'images/item_c_lb.jpg',
+  'dr1':'images/item_dr1.jpg',
+  'h_m':'images/item_h_m.jpg',
+  'c_mh':'images/item_c_mh.jpg',
+  'dr3':'images/item_dr3.jpg',
+  'h_p':'images/item_h_p.jpg',
+  'dr2':'images/item_dr2.jpg',
+  'm_ms':'images/item_m_ms.jpg',
+  'r_ms':'images/item_m_ms.jpg',
+  'm_k':'images/item_m_k.jpg',
+  'r_k':'images/item_m_k.jpg',
+  'm_l':'images/item_m_l.jpg',
+  'r_l':'images/item_m_l.jpg',
+  'm_b':'images/item_m_b.jpg',
+  'r_b':'images/item_r_b.jpg',
+  's_t':'images/item_s_t.jpg',
+  's_b':'images/item_s_b.jpg',
+  's_h':'images/item_s_h.jpg',
+  's_l':'images/item_s_l.jpg',
+  'c_hm':'images/item_c_hm.jpg',
+  'c_mj':'images/item_c_mj.jpg',
+  'c_hi':'images/item_c_hi.jpg',
+  'c_sk':'images/item_c_sk.jpg',
+  'c_tk':'images/item_c_tk.jpg',
+  'h_f':'images/item_h_f.jpg',
+  'pk':'images/item_pk.jpg',
+  'gp':'images/item_gp.jpg',
+  's_tz':'images/item_s_tz.jpg',
+  'c_tz':'images/item_s_tz.jpg',
+};
+
+
+var L='en',order={},tc=0,eh=0;
+
+var MINI={
+  veg:[
+    {id:'m_z',ic:'Z', en:{name:'Zaatar',               desc:'Fresh homemade authentic zaatar mix, extra virgin olive oil'},                fr:{name:'Zaatar',               desc:'Melange de zaatar frais maison, huile d olive extra vierge'},            h:15,d:28},
+    {id:'m_c',ic:'C', en:{name:'Cheese with sesame',   desc:'Lebanese-style cheese mix with sesame seeds'},                                fr:{name:'Fromage au sesame',     desc:'Melange de fromages libanais aux graines de sesame'},                   h:18,d:34},
+    {id:'m_m',ic:'M', en:{name:'Muhammara and walnuts',desc:'Roasted red pepper, walnuts, sesame, pomegranate molasses, olive oil'},        fr:{name:'Muhammara et noix',     desc:'Poivron rouge grille, noix, sesame, molasses de grenade, huile d olive'},h:18,d:34},
+  ],
+  meat:[],
+  premium:[]
+};
+var REG={
+  veg:[
+    {id:'r_z', ic:'Z', en:{name:'Zaatar',               desc:'Fresh homemade authentic zaatar mix, extra virgin olive oil'},                fr:{name:'Zaatar',               desc:'Melange de zaatar frais maison, huile d olive extra vierge'},                                    each:8, h:45,d:85, mini_h:15,mini_d:28},
+    {id:'r_c', ic:'C', en:{name:'Cheese with sesame',   desc:'Lebanese-style cheese mix'},                                                  fr:{name:'Fromage au sesame',     desc:'Melange de fromages libanais'},                                         each:10,h:55,d:105, mini_h:18,mini_d:34},
+    {id:'r_m', ic:'M', en:{name:'Muhammara and walnuts',desc:'Roasted red pepper, walnuts, sesame, pomegranate molasses'},                  fr:{name:'Muhammara et noix',     desc:'Poivron rouge grille, noix, sesame, molasses de grenade'},               each:10,h:55,d:105, mini_h:18,mini_d:34},
+  ],
+  meat:[
+    {id:'r_ms',ic:'Ch',en:{name:'Chicken Musakhan',     desc:'Grilled chicken, slow-cooked onions, sumac, olive oil'},                     fr:{name:'Poulet Musakhan',       desc:'Poulet grille, oignons mijotes, sumac, huile d olive, pignons de pin grilles'},                  each:13,h:72,d:140},
+    {id:'r_k', ic:'K', en:{name:'Kafta Arayes',         desc:'Spiced kafta-style meat, prepared thin for saj service'},                    fr:{name:'Kafta Arayes',          desc:'Boeuf et agneau haches, persil, oignon, cumin, cannelle, quatre-epices, prepare fin sur le saj'},                  each:14,h:78,d:150},
+    {id:'r_l', ic:'L', en:{name:'Armenian Lahmadjoun',desc:'Spiced meat with tomato, pepper, herbs and spices'},                        fr:{name:'Lahmadjoun Armenien', desc:'Viande epicee, tomate, poivron, herbes et epices'},                      each:14,h:78,d:150},
+    {id:'r_b', ic:'P', en:{name:'Labneh Basturma goat cheese (Lebanese pizza)',desc:'Labneh, basturma, goat cheese, arugula and balsamic glaze'},              fr:{name:'Labneh Basturma fromage de chevre (Pizza libanaise)',desc:'Labneh, basturma, fromage de chevre, roquette et glaze balsamique'},                    each:18,h:90,d:175},
+  ]
+};
+var SAL=[
+  {id:'s_f',ic:'F', en:{name:'Fattoush with sumac',       desc:'Classic Lebanese bread salad with sumac dressing'},     fr:{name:'Fattoush au sumac',            desc:'Salade libanaise classique au sumac'},         m:55,b:95},
+  {id:'s_t',ic:'T', en:{name:'Tabbouleh',                 desc:'Parsley, bulgur, tomato, mint, lemon and olive oil'},   fr:{name:'Tabboule',                     desc:'Persil, boulgour, tomate, menthe, citron'},    m:70,b:125},
+  {id:'s_b',ic:'B', en:{name:'Beet and lentil salad',     desc:'With goat labneh balls'},                               fr:{name:'Salade betterave et lentilles', desc:'Avec boules de labneh de chevre'},             m:65,b:110},
+  {id:'s_h',ic:'H', en:{name:'Halloumi and watermelon',   desc:'Grilled halloumi, watermelon, herbs'},                  fr:{name:'Halloumi et melon d eau',      desc:'Halloumi grille, melon d eau, herbes'},        m:80,b:145},
+  {id:'s_l',ic:'L', en:{name:'Lupin feta mandarin rocca', desc:'Lupini beans, feta, mandarin, arugula'},                fr:{name:'Lupin feta mandarine roquette',desc:'Lupins, feta, mandarine, roquette'},           m:75,b:135},
+];
+var COLD=[
+  {id:'c_hm',ic:'Hm',en:{name:'Hummus chickpea crunch',      desc:'Classic hummus, crispy chickpeas and olive oil'},        fr:{name:'Houmous croustillant',          desc:'Houmous, pois chiches croustillants'},         m:50,b:85},
+  {id:'c_bg',ic:'Bg',en:{name:'Baba ghanouj with makdous',   desc:'Smoky aubergine with pickled aubergine makdous'},        fr:{name:'Baba ghanouj et makdous',       desc:'Aubergine fumee avec makdous marine'},         m:60,b:105},
+  {id:'c_mh',ic:'Mh',en:{name:'Muhammara pickled peppers',   desc:'Roasted red pepper and walnut spread'},                  fr:{name:'Muhammara et poivrons marines', desc:'Tartinade poivron rouge et noix'},             m:65,b:115},
+  {id:'c_bm',ic:'Bm',en:{name:'Beet mutabbal',               desc:'Roasted beet, tahini, labneh and lemon'},                fr:{name:'Mutabbal betterave',            desc:'Betterave rotie, tahini, labneh et citron'},  m:60,b:105},
+  {id:'c_lb',ic:'Lb',en:{name:'Labneh with dried mint',      desc:'Strained yogurt labneh, dried mint and olive oil'},     fr:{name:'Labneh a la menthe',            desc:'Labneh egoutte, menthe sechee et huile d olive'},m:60,b:105},
+  {id:'c_tz',ic:'Tz',en:{name:'Laban (Tzatziki)',             desc:'Homemade yogurt, cucumber, garlic, dried mint and olive oil'},  fr:{name:'Laban (Tzatziki)',              desc:'Yogourt maison, concombre, ail, menthe sechee et huile d olive'},          m:50,b:90},
+  {id:'c_lo',ic:'Lo',en:{name:'Loubieh bi zeit',             desc:'Green beans slow-cooked in tomato and olive oil'},      fr:{name:'Loubieh bi zeit',               desc:'Haricots verts mijotes a la tomate'},          m:65,b:115},
+  {id:'c_mo',ic:'Mo',en:{name:'Moussaka',     desc:'Roasted aubergine, tomato, cottage cheese'},             fr:{name:'Moussaka',         desc:'Aubergine rotie, tomate, fromage blanc'},      m:70,b:125},
+  {id:'c_mj',ic:'Mj',en:{name:'Mjadara with fried onions',  desc:'Lentils and bulgur with caramelized onions'},            fr:{name:'Mjadara aux oignons',           desc:'Lentilles et boulgour aux oignons caramelises'},m:55,b:95},
+  {id:'c_hi',ic:'Hi',en:{name:'Hindbeh balls pomegranate',   desc:'Wild chicory balls with pomegranate molasses'},          fr:{name:'Boulettes hindbeh grenade',     desc:'Boulettes de chicoree a la molasses de grenade'},m:75,b:135},
+  {id:'c_pk',ic:'Pk',en:{name:'Potato kibbeh',               desc:'With caramelized onions'},                               fr:{name:'Kibbeh de pomme de terre',      desc:'Avec oignons caramelises'},                    m:65,b:115},
+  {id:'c_tk',ic:'Tk',en:{name:'Tomato kibbeh',               desc:'Lebanese-style kibbeh with tomato'},                    fr:{name:'Kibbeh tomate',                 desc:'Kibbeh libanais a la tomate'},                 m:65,b:115},
+  {id:'c_lk',ic:'Lk',en:{name:'Lentil kibbeh',               desc:'Vegetarian lentil kibbeh'},                              fr:{name:'Kibbeh lentilles',              desc:'Kibbeh vegetarien aux lentilles'},             m:60,b:105},
+  {id:'c_sk',ic:'Sk',en:{name:'Samkeh harra spread',         desc:'Spiced fish spread with tahini and herbs'},              fr:{name:'Samkeh harra',                  desc:'Tartinade de poisson epicee au tahini'},       m:80,b:145},
+  {id:'c_za',ic:'Za',en:{name:'Zaatar and olive oil',        desc:'Fresh zaatar leaves, quality olive oil'},                fr:{name:'Zaatar et huile d olive',       desc:'Feuilles de zaatar fraiches, huile d olive'},  m:45,b:80},
+];
+var HOT=[
+  {id:'h_p',ic:'Pu',en:{name:'Pumpkin kibbeh',              desc:'With muhammara filling'},                     fr:{name:'Kibbeh potiron',      desc:'Avec farce muhammara'},                       h:18,d:45},
+  {id:'h_f',ic:'Ft',en:{name:'Spinach or purslane fatayer', desc:'Traditional Lebanese baked pastry'},          fr:{name:'Fatayer epinards',    desc:'Feuillete libanais traditionnel cuit au four'},h:18,d:52},
+  {id:'h_m',ic:'Km',en:{name:'Meat kibbeh',                 desc:'Classic Lebanese stuffed kibbeh'},            fr:{name:'Kibbeh viande',       desc:'Kibbeh libanais classique farci'},             h:18,d:52},
+  {id:'h_c',ic:'Cr',en:{name:'Cheese rolls',                desc:'Crispy pastry with Lebanese cheese filling'}, fr:{name:'Rouleaux au fromage', desc:'Feuillete croustillant au fromage libanais'},  h:18,d:45},
+];
+var PIK=[
+  {id:'pk',ic:'Pi',en:{name:'Pickles and olives',desc:'Wild cucumber, zaatar, olives and makdous'},fr:{name:'Cornichons et olives',desc:'Concombre, zaatar, olives et makdous'},m:30,b:45},
+  {id:'gp',ic:'Gd',en:{name:'Garden plate',desc:'Tomato, cucumber, mint, spring onion, radish'},fr:{name:'Assiette jardin',desc:'Tomate, concombre, menthe, oignon, radis'},m:30,b:45},
+  {id:'br',ic:'Br',en:{name:'Pita bread',desc:'Freshly prepared pita bread for 20 guests'},fr:{name:'Pain pita',desc:'Pain pita frais prepare pour 20 invites'},p:35},
+];
+var DES=[
+  {id:'d1',ic:'Bk',en:{name:'Lebanese baklava',            desc:'Assorted Lebanese baklava selection'},       fr:{name:'Baklava libanais',            desc:'Selection assortie de baklava libanais'}, m:55,b:95,ml:'1/2 kg (~10 guests)',bl:'1 kg (~20 guests)'},
+  {id:'d2',ic:'Sf',en:{name:'Sfouf squares',               desc:'Turmeric cake, 1 dozen'},                   fr:{name:'Carres sfouf',                desc:'Gateau au curcuma, 1 douzaine'},         p:31},
+  {id:'d3',ic:'As',en:{name:'Ashtalieh cups',              desc:'Rose water pudding -- individual cups'},     fr:{name:'Coupes ashtalieh',            desc:'Pouding a l eau de rose sans oeuf, coupes individuelles'}, m:38,b:72,ml:'1/2 doz',bl:'1 doz'},
+  {id:'d5',ic:'Cr',en:{name:'Carob molasses tahini kaak',  desc:'Serves 10'},                                fr:{name:'Molasses caroube tahini kaak',desc:'Pour 10 personnes'},                     p:40},
+  {id:'d6',ic:'Fg',en:{name:'Lebanese fig jam sesame kaak',desc:'Serves 10'},                                fr:{name:'Confiture de figue kaak sesame',desc:'Pour 10 personnes'},                   p:40},
+];
+var DRK=[
+  {id:'dr1',ic:'Lm',en:{name:'Lebanese lemonade',  desc:'Orange blossom and mint'},fr:{name:'Limonade libanaise',   desc:'Fleur d oranger et menthe'},l1:16,l5:75},
+  {id:'dr2',ic:'Rs',en:{name:'Rose drink',          desc:''},                        fr:{name:'Boisson a la rose',    desc:''},                          l1:14,l5:65},
+  {id:'dr3',ic:'Mu',en:{name:'Iced mulberry drink', desc:''},                        fr:{name:'Boisson glacee muree', desc:''},                          l1:15,l5:70},
+];
+
+function t(x){return x[L]||x.en;}
+
+function mkQ(lbl,id,v,price,name){
+  var g=document.createElement('div');g.className='qg';
+  var l=document.createElement('span');l.className='ql';l.textContent=lbl;
+  var m=document.createElement('button');m.className='qb';m.textContent='-';
+  m.dataset.id=id;m.dataset.v=v;m.dataset.price=price;m.dataset.delta=-1;m.dataset.label=name+' -- '+lbl;
+  var val=document.createElement('span');val.className='qv';val.id='qv-'+id+'-'+v;val.textContent='0';
+  var p=document.createElement('button');p.className='qb';p.textContent='+';
+  p.dataset.id=id;p.dataset.v=v;p.dataset.price=price;p.dataset.delta=1;p.dataset.label=name+' -- '+lbl;
+  g.appendChild(l);g.appendChild(m);g.appendChild(val);g.appendChild(p);
+  return g;
+}
+function mkIC(txt,id){
+  var d=document.createElement('div');d.className='ic';
+  if(id&&IMGS[id]){
+    var img=document.createElement('img');
+    img.src=IMGS[id];
+    img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
+    d.appendChild(img);
+    d.style.padding='0';
+  } else {
+    d.textContent=txt;
+  }
+  return d;
+}
+
+function mkMini(x,cid){
+  var i=t(x),card=document.createElement('div');card.className='item-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='ib';
+  var n=document.createElement('div');n.className='i-name';n.textContent=i.name;
+  var d=document.createElement('div');d.className='i-desc';d.textContent=i.desc;
+  var c=document.createElement('div');c.className='i-ctrl';
+  c.appendChild(mkQ('1/2 doz',x.id,'h',x.h,i.name));
+  c.appendChild(mkQ('1 doz',x.id,'d',x.d,i.name));
+  var pt=document.createElement('span');pt.className='ptag';pt.textContent='$'+x.h+' / $'+x.d;
+  c.appendChild(pt);b.appendChild(n);b.appendChild(d);b.appendChild(c);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+function mkReg(x,cid){
+  var i=t(x),card=document.createElement('div');card.className='item-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='ib';
+  var n=document.createElement('div');n.className='i-name';n.textContent=i.name;
+  var d=document.createElement('div');d.className='i-desc';d.textContent=i.desc;
+  var c=document.createElement('div');c.className='i-ctrl';
+  // Regular saj sizes
+  var regLbl=document.createElement('span');regLbl.className='ql';
+  regLbl.style.cssText='font-size:.62rem;color:var(--olive);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:.2rem;display:block;width:100%;margin-bottom:.2rem;';
+  regLbl.textContent='Regular Saj';
+  c.appendChild(regLbl);
+  c.appendChild(mkQ('Each',x.id,'each',x.each,i.name+' regular'));
+  c.appendChild(mkQ('1/2 doz',x.id,'h',x.h,i.name+' regular'));
+  c.appendChild(mkQ('1 doz',x.id,'d',x.d,i.name+' regular'));
+  var pt=document.createElement('span');pt.className='ptag';pt.textContent='$'+x.each+' / $'+x.h+' / $'+x.d;
+  c.appendChild(pt);
+  // Mini sizes (only if item has mini pricing)
+  if(x.mini_h){
+    var br=document.createElement('div');br.style.cssText='width:100%;height:1px;background:var(--border);margin:.3rem 0;';
+    c.appendChild(br);
+    var miniLbl=document.createElement('span');miniLbl.className='ql';
+    miniLbl.style.cssText='font-size:.62rem;color:var(--olive);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:.2rem;display:block;width:100%;margin-bottom:.2rem;';
+    miniLbl.textContent='Mini Manaish';
+    c.appendChild(miniLbl);
+    c.appendChild(mkQ('1/2 doz',x.id,'mh',x.mini_h,i.name+' mini'));
+    c.appendChild(mkQ('1 doz',x.id,'md',x.mini_d,i.name+' mini'));
+    var pt2=document.createElement('span');pt2.className='ptag';pt2.textContent='$'+x.mini_h+' / $'+x.mini_d;
+    c.appendChild(pt2);
+  }
+  b.appendChild(n);b.appendChild(d);b.appendChild(c);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+function mkTray(x,cid){
+  var i=t(x),card=document.createElement('div');card.className='tray-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='tb';
+  var n=document.createElement('div');n.className='t-name';n.textContent=i.name;
+  var d=document.createElement('div');d.className='t-desc';d.textContent=i.desc;
+  var btns=document.createElement('div');btns.className='t-btns';
+  [{size:'m',price:x.m,label:'Medium'},{size:'b',price:x.b,label:'Big'}].forEach(function(cfg){
+    var btn=document.createElement('button');btn.className='t-btn';
+    btn.id='sz-'+x.id+'-'+cfg.size;
+    btn.dataset.id=x.id;btn.dataset.size=cfg.size;btn.dataset.price=cfg.price;
+    btn.dataset.label=i.name+' -- '+cfg.label+' tray';
+    btn.textContent=cfg.label+' -- $'+cfg.price;
+    btns.appendChild(btn);
+  });
+  b.appendChild(n);b.appendChild(d);b.appendChild(btns);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+function mkDoz(x,cid){
+  var i=t(x),card=document.createElement('div');card.className='item-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='ib';
+  var n=document.createElement('div');n.className='i-name';n.textContent=i.name;
+  var d=document.createElement('div');d.className='i-desc';d.textContent=i.desc;
+  var c=document.createElement('div');c.className='i-ctrl';
+  c.appendChild(mkQ('1/2 doz',x.id,'h',x.h,i.name));
+  c.appendChild(mkQ('1 doz',x.id,'d',x.d,i.name));
+  var pt=document.createElement('span');pt.className='ptag';pt.textContent='$'+x.h+' / $'+x.d;
+  c.appendChild(pt);b.appendChild(n);b.appendChild(d);b.appendChild(c);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+function mkDes(x,cid){
+  var i=t(x);
+  // Baklava and similar: tray style (m/b)
+  if(x.m!==undefined){
+    var card=document.createElement('div');card.className='tray-card';card.id='card-'+x.id;
+    var b=document.createElement('div');b.className='tb';
+    var n=document.createElement('div');n.className='t-name';n.textContent=i.name;
+    var d=document.createElement('div');d.className='t-desc';d.textContent=i.desc;
+    var btns=document.createElement('div');btns.className='t-btns';
+    [{size:'m',price:x.m,label:x.ml||'Medium (~1 kg, 10 guests)'},{size:'b',price:x.b,label:x.bl||'Big (~2 kg, 20 guests)'}].forEach(function(cfg){
+      var btn=document.createElement('button');btn.className='t-btn';
+      btn.id='sz-'+x.id+'-'+cfg.size;
+      btn.dataset.id=x.id;btn.dataset.size=cfg.size;btn.dataset.price=cfg.price;
+      btn.dataset.label=i.name+' -- '+cfg.label;
+      btn.textContent=cfg.label+' -- $'+cfg.price;
+      btns.appendChild(btn);
+    });
+    b.appendChild(n);b.appendChild(d);b.appendChild(btns);
+    card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+    document.getElementById(cid).appendChild(card);
+    return;
+  }
+  // Regular qty items
+  var card=document.createElement('div');card.className='item-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='dc';
+  var n=document.createElement('div');n.className='d-name';n.textContent=i.name;
+  var d=document.createElement('div');d.className='d-desc';d.textContent=i.desc;
+  var c=document.createElement('div');c.className='d-ctrl';
+  var g=document.createElement('div');g.className='qg';
+  var m=document.createElement('button');m.className='qb';m.textContent='-';
+  m.dataset.id=x.id;m.dataset.v='qty';m.dataset.price=x.p;m.dataset.delta=-1;m.dataset.label=i.name;
+  var val=document.createElement('span');val.className='qv';val.id='qv-'+x.id+'-qty';val.textContent='0';
+  var p=document.createElement('button');p.className='qb';p.textContent='+';
+  p.dataset.id=x.id;p.dataset.v='qty';p.dataset.price=x.p;p.dataset.delta=1;p.dataset.label=i.name;
+  g.appendChild(m);g.appendChild(val);g.appendChild(p);
+  var pt=document.createElement('span');pt.className='ptag';pt.textContent='$'+x.p+' each';
+  c.appendChild(g);c.appendChild(pt);
+  b.appendChild(n);b.appendChild(d);b.appendChild(c);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+function mkSim(x,cid){
+  var i=t(x),row=document.createElement('div');row.className='trow';row.id='card-'+x.id;
+  row.dataset.id=x.id;row.dataset.price=x.p;row.dataset.label=i.name;
+  var ic=document.createElement('div');ic.className='trow-ic';
+  if(IMGS[x.id]){var simg=document.createElement('img');simg.src=IMGS[x.id];simg.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';ic.appendChild(simg);ic.style.padding='0';}
+  else{ic.textContent=x.ic;}
+  var inf=document.createElement('div');inf.className='trow-info';
+  var nm=document.createElement('div');nm.className='trow-name';nm.textContent=i.name;
+  inf.appendChild(nm);
+  if(i.desc){var dc=document.createElement('div');dc.className='trow-desc';dc.textContent=i.desc;inf.appendChild(dc);}
+  var pr=document.createElement('div');pr.className='trow-price';pr.textContent='$'+x.p;
+  var chk=document.createElement('div');chk.className='trow-chk';chk.id='chk-'+x.id;
+  chk.textContent=String.fromCharCode(10003);chk.style.color='transparent';
+  row.appendChild(ic);row.appendChild(inf);row.appendChild(pr);row.appendChild(chk);
+  document.getElementById(cid).appendChild(row);
+}
+function mkDrk(x,cid){
+  var i=t(x),card=document.createElement('div');card.className='item-card';card.id='card-'+x.id;
+  var b=document.createElement('div');b.className='ib';
+  var n=document.createElement('div');n.className='i-name';n.textContent=i.name;
+  b.appendChild(n);
+  if(i.desc){var d=document.createElement('div');d.className='i-desc';d.textContent=i.desc;b.appendChild(d);}
+  var c=document.createElement('div');c.className='i-ctrl';
+  c.appendChild(mkQ('1 L',x.id,'1L',x.l1,i.name));
+  c.appendChild(mkQ('5 L',x.id,'5L',x.l5,i.name));
+  var pt=document.createElement('span');pt.className='ptag';pt.textContent='$'+x.l1+'/L - $'+x.l5+'/5L';
+  c.appendChild(pt);b.appendChild(c);
+  card.appendChild(mkIC(x.ic,x.id));card.appendChild(b);
+  document.getElementById(cid).appendChild(card);
+}
+
+document.addEventListener('click',function(e){
+  var qb=e.target.closest('.qb[data-id]');
+  if(qb){
+    var id=qb.dataset.id,v=qb.dataset.v,price=parseFloat(qb.dataset.price),
+        delta=parseInt(qb.dataset.delta),lbl=qb.dataset.label;
+    var key=id+'_'+v;
+    var el=document.getElementById('qv-'+id+'-'+v);
+    var cur=Math.max(0,(parseInt(el.textContent)||0)+delta);
+    el.textContent=cur;
+    if(cur===0){delete order[key];}else{order[key]={name:lbl,qty:cur,price:price,lineTotal:cur*price};}
+    hlC(id);rend();return;
+  }
+  var eb=e.target.closest('.qb[data-action="extra"]');
+  if(eb){
+    eh=Math.max(0,eh+parseInt(eb.dataset.delta));
+    document.getElementById('extra-val').textContent=eh;
+    document.getElementById('extra-cost').textContent=eh>0?'= $'+(eh*75):'';
+    rend();return;
+  }
+  var tb=e.target.closest('.t-btn[data-id]');
+  if(tb){
+    var id=tb.dataset.id,sz=tb.dataset.size,price=parseFloat(tb.dataset.price),lbl=tb.dataset.label;
+    var other=sz==='m'?'b':'m';
+    delete order[id+'_'+other];
+    var mb=document.getElementById('sz-'+id+'-m');var bb=document.getElementById('sz-'+id+'-b');
+    if(mb)mb.classList.remove('active');if(bb)bb.classList.remove('active');
+    var key=id+'_'+sz;
+    if(order[key]){delete order[key];}
+    else{order[key]={name:lbl,qty:1,price:price,lineTotal:price};tb.classList.add('active');}
+    var c=document.getElementById('card-'+id);
+    if(c)c.classList.toggle('selected',!!(order[id+'_m']||order[id+'_b']));
+    rend();return;
+  }
+  var tr=e.target.closest('.trow[data-id]');
+  if(tr){
+    var id=tr.dataset.id,price=parseFloat(tr.dataset.price),lbl=tr.dataset.label;
+    var chk=document.getElementById('chk-'+id);
+    if(order[id]){delete order[id];tr.classList.remove('active');chk.style.color='transparent';}
+    else{order[id]={name:lbl,qty:1,price:price,lineTotal:price};tr.classList.add('active');chk.style.color='white';}
+    rend();return;
+  }
+  var rm=e.target.closest('.s-rm[data-key]');
+  if(rm){rmItem(rm.dataset.key);return;}
+});
+
+function setFmt(f){}
+function setTr(z){
+  tc=z==='outside'?50:0;
+  document.getElementById('tr-mtl').classList.toggle('active',z==='montreal');
+  document.getElementById('tr-out').classList.toggle('active',z==='outside');
+  rend();
+}
+function hlC(id){
+  var c=document.getElementById('card-'+id);if(!c)return;
+  c.classList.toggle('selected',Object.keys(order).some(function(k){return k.indexOf(id+'_')===0;}));
+}
+function rmItem(key){
+  var parts=key.split('_'),v=parts[parts.length-1],base=parts.slice(0,-1).join('_');
+  var el=document.getElementById('qv-'+base+'-'+v);if(el)el.textContent='0';
+  var btn=document.getElementById('sz-'+base+'-'+v);if(btn)btn.classList.remove('active');
+  delete order[key];hlC(base);rend();
+}
+function sTot(){return tc+(eh*75);}
+
+function rend(){
+  var body=document.getElementById('sb'),empty=document.getElementById('se');
+  body.querySelectorAll('.s-head,.s-line,.s-inc').forEach(function(e){e.remove();});
+  var keys=Object.keys(order);
+  var food=keys.reduce(function(s,k){return s+(order[k].lineTotal||0);},0);
+  var st=sTot(),grand=food+st;
+  document.getElementById('tot').textContent='$'+grand.toLocaleString();
+  document.getElementById('hg').textContent=(document.getElementById('gc').value||20)+(L==='fr'?' invites':' guests');
+  var nt=document.getElementById('tnote');
+  if(st>0&&food>0){nt.style.display='block';nt.textContent=(L==='fr'?'Nourriture: ':'Food: ')+'$'+food+(L==='fr'?' + station: ':' + station: ')+'$'+st;}
+  else{nt.style.display='none';}
+  if(keys.length===0&&st===0){empty.style.display='block';return;}
+  empty.style.display='none';
+  // station always-included line
+  var si=document.createElement('div');si.className='s-inc';
+  var sn=document.createElement('span');sn.className='s-name';sn.textContent=L==='fr'?'Station saj + 3h -- incluse':'Saj station + 3 hrs -- included';
+  var sp=document.createElement('span');sp.className='s-price';sp.textContent=L==='fr'?'Inclus':'Included';
+  si.appendChild(sn);si.appendChild(sp);body.insertBefore(si,empty);
+  var groups=[
+    {label:'Saj',keys:keys.filter(function(k){return /^[mr]_/.test(k);})},
+    {label:L==='fr'?'Salades':'Salads',keys:keys.filter(function(k){return k.indexOf('s_')===0;})},
+    {label:L==='fr'?'Mezze froid':'Cold Mezze',keys:keys.filter(function(k){return k.indexOf('c_')===0;})},
+    {label:L==='fr'?'Mezze chaud':'Hot Mezze',keys:keys.filter(function(k){return k.indexOf('h_')===0;})},
+    {label:L==='fr'?'Extras':'Extras',keys:keys.filter(function(k){return /^(p[12]|g[12]|pg|br)/.test(k);})},
+    {label:'Desserts',keys:keys.filter(function(k){return k.indexOf('d')===0&&/^d\d/.test(k);})},
+    {label:L==='fr'?'Boissons':'Drinks',keys:keys.filter(function(k){return k.indexOf('dr')===0;})},
+  ];
+  groups.forEach(function(g){
+    if(!g.keys.length)return;
+    var h=document.createElement('div');h.className='s-head';h.textContent=g.label;
+    body.insertBefore(h,empty);
+    g.keys.forEach(function(k){
+      var item=order[k];
+      var line=document.createElement('div');line.className='s-line';
+      var nm=document.createElement('span');nm.className='s-name';nm.textContent=(item.qty>1?item.qty+'x ':'')+item.name;
+      var pr=document.createElement('span');pr.className='s-price';pr.textContent='$'+item.lineTotal;
+      var rm=document.createElement('span');rm.className='s-rm';rm.dataset.key=k;rm.title='Remove';rm.textContent='x';
+      line.appendChild(nm);line.appendChild(pr);line.appendChild(rm);
+      body.insertBefore(line,empty);
+    });
+  });
+  if(tc>0||eh>0){
+    var h=document.createElement('div');h.className='s-head';h.textContent=L==='fr'?'Transport / Extras':'Transport / Extras';
+    body.insertBefore(h,empty);
+    if(tc>0){
+      var l=document.createElement('div');l.className='s-line';
+      var n=document.createElement('span');n.className='s-name';n.textContent=L==='fr'?'Transport hors Montreal':'Transport outside Montreal';
+      var p=document.createElement('span');p.className='s-price';p.textContent='+$50';
+      l.appendChild(n);l.appendChild(p);body.insertBefore(l,empty);
+    }
+    if(eh>0){
+      var l2=document.createElement('div');l2.className='s-line';
+      var n2=document.createElement('span');n2.className='s-name';n2.textContent=eh+(L==='fr'?'h extra':'h extra service');
+      var p2=document.createElement('span');p2.className='s-price';p2.textContent='$'+(eh*75);
+      l2.appendChild(n2);l2.appendChild(p2);body.insertBefore(l2,empty);
+    }
+  }
+}
+
+function upd(){
+  var g=parseInt(document.getElementById('gc').value)||20;
+  var mini=Math.round(g*4.25),reg=Math.round(g*2.25);
+  document.getElementById('gs').textContent=L==='fr'
+    ?'Suggestion: '+Math.round(g*2.5)+'-'+Math.round(g*3.5)+' mini manaish ou '+Math.round(g*1.5)+'-'+Math.round(g*2)+' saj regulier'
+    :'Suggested: '+Math.round(g*2.5)+'-'+Math.round(g*3.5)+' mini manaish or '+Math.round(g*1.5)+'-'+Math.round(g*2)+' regular saj';
+  document.getElementById('hg').textContent=g+(L==='fr'?' invites':' guests');
+}
+
+function rebuild(){
+  var saved=JSON.parse(JSON.stringify(order));
+  ['reg-veg','reg-meat','salads-list','cold-list','hot-list','pickles-list','desserts-list','drinks-list'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.innerHTML='';
+  });
+  
+  
+  
+  REG.veg.forEach(function(i){mkReg(i,'reg-veg');});
+  REG.meat.forEach(function(i){mkReg(i,'reg-meat');});
+  SAL.forEach(function(i){mkTray(i,'salads-list');});
+  COLD.forEach(function(i){mkTray(i,'cold-list');});
+  HOT.forEach(function(i){mkDoz(i,'hot-list');});
+  PIK.forEach(function(i){
+  if(i.m!==undefined){mkTray(i,'pickles-list');}
+  else{mkSim(i,'pickles-list');}
+});
+  DES.forEach(function(i){mkDes(i,'desserts-list');});
+  DRK.forEach(function(i){mkDrk(i,'drinks-list');});
+  order=saved;
+  Object.keys(order).forEach(function(key){
+    var parts=key.split('_'),v=parts[parts.length-1],base=parts.slice(0,-1).join('_');
+    var el=document.getElementById('qv-'+base+'-'+v);if(el)el.textContent=order[key].qty;
+    var btn=document.getElementById('sz-'+base+'-'+v);if(btn)btn.classList.add('active');
+    hlC(base);
+    var card=document.getElementById('card-'+base);
+    if(card&&card.classList.contains('trow')){
+      card.classList.add('active');
+      var chk=document.getElementById('chk-'+base);if(chk)chk.style.color='white';
+    }
+  });
+}
+
+function setLang(lang){
+  L=lang;
+  document.getElementById('btn-en').classList.toggle('active',lang==='en');
+  document.getElementById('btn-fr').classList.toggle('active',lang==='fr');
+  document.querySelectorAll('[data-en]').forEach(function(el){
+    el.innerHTML=el.getAttribute('data-'+lang)||el.innerHTML;
+  });
+  document.querySelectorAll('[data-placeholder-en]').forEach(function(el){
+    el.placeholder=el.getAttribute('data-placeholder-'+lang)||el.placeholder;
+  });
+  rebuild();upd();rend();
+}
+
+async function send(){
+  var name=document.getElementById('fn').value.trim();
+  var email=document.getElementById('fe').value.trim();
+  if(!name||!email){alert(L==='fr'?'Veuillez entrer votre nom et courriel.':'Please enter your name and email.');return;}
+  var phone=document.getElementById('fp').value.trim();
+  var date=document.getElementById('fd').value;
+  var notes=document.getElementById('fnotes').value.trim();
+  var guests=document.getElementById('gc').value;
+  var keys=Object.keys(order);
+  var food=keys.reduce(function(s,k){return s+(order[k].lineTotal||0);},0);
+  var st=sTot(),grand=food+st;
+  var lines='  - Saj station + 3 hrs service -- Included\n';
+  if(tc>0)lines+='  - Transport outside Montreal -- $50\n';
+  if(eh>0)lines+='  - '+eh+'h extra -- $'+(eh*75)+'\n';
+  lines+=keys.map(function(k){var i=order[k];return'  - '+(i.qty>1?i.qty+'x ':'')+i.name+' -- $'+i.lineTotal;}).join('\n');
+  var msg='Estimate from '+name+'\nGuests: '+guests+'\nDate: '+(date||'TBD')+'\nPhone: '+(phone||'N/A')+'\nEmail: '+email+'\n\n'+lines+'\n\nTOTAL: $'+grand+'\n\nNotes: '+(notes||'None');
+  var btn=document.getElementById('sbtn');btn.disabled=true;
+  try{
+    var res=await fetch('https://formspree.io/f/YOUR_FORM_ID',{method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({name:name,email:email,phone:phone,event_date:date,guests:guests,total:'$'+grand,message:msg})});
+    if(res.ok){document.getElementById('ok').style.display='block';btn.style.display='none';return;}
+  }catch(e){}
+  window.location.href='mailto:alikays@gmail.com?subject=Estimate from '+encodeURIComponent(name)+'&body='+encodeURIComponent(msg);
+  btn.disabled=false;
+}
+
+// INIT
+
+
+
+REG.veg.forEach(function(i){mkReg(i,'reg-veg');});
+REG.meat.forEach(function(i){mkReg(i,'reg-meat');});
+SAL.forEach(function(i){mkTray(i,'salads-list');});
+COLD.forEach(function(i){mkTray(i,'cold-list');});
+HOT.forEach(function(i){mkDoz(i,'hot-list');});
+PIK.forEach(function(i){
+  if(i.m!==undefined){mkTray(i,'pickles-list');}
+  else{mkSim(i,'pickles-list');}
+});
+DES.forEach(function(i){mkDes(i,'desserts-list');});
+DRK.forEach(function(i){mkDrk(i,'drinks-list');});
+upd();rend();
+</script>
+</body>
+</html>
